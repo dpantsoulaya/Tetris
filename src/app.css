@@ -1,0 +1,24 @@
+.mainField {
+  width: 250px;
+  height: 500px;
+  border: 1px black solid;
+  margin: 20px;
+  padding: 0;
+  background-color: greenyellow;
+  position: relative;
+}
+
+.fieldBlock {
+  width: 25px;
+  height: 25px;
+  border: 1px solid gray;
+  position: absolute;
+}
+
+.elementBlock {
+  width: 25px;
+  height: 25px;
+  border: 1px solid gray;
+  background-color: brown;
+  position: absolute;
+}
