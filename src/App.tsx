@@ -31,6 +31,7 @@ const NUMBER_OF_FIGURE_TYPES = 7;
 // Очки за заполненную линию
 const SCORE_POINTS_FOR_LINE = 100;
 
+<<<<<<< HEAD
 // Точки счета для перехода на следующий уровень
 const score_checkpoints = [300, 700, 1000];
 
@@ -40,6 +41,8 @@ const speedForLevels = [1000, 700, 500, 300];
 // Картинки для уровней
 const imagesForLevels = ["level1.jpg", "level2.jpg", "level3.jpg", "level4.jpg"];
 
+=======
+>>>>>>> 1860f9c71b7130e3851590f0efc737fbcfcc0e80
 export const App = () => {
   const [currentFigure, setCurrentFigure] = useState<Block>({ points: [] });
   const [filledBlocks, setFilledBlocks] = useState<Block>({ points: [] });
@@ -48,6 +51,11 @@ export const App = () => {
   const [pause, setPause] = useState(false);
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
+<<<<<<< HEAD
+=======
+  const [speed, setSpeed] = useState(700);
+  const [image, setImage] = useState("level1.jpg");
+>>>>>>> 1860f9c71b7130e3851590f0efc737fbcfcc0e80
 
   function randomIntFromInterval(min: number, max: number) {
     return Math.floor(Math.random() * (max - min + 1) + min);
@@ -120,10 +128,17 @@ export const App = () => {
         break;
       case FigureType.L:
         points = [
+<<<<<<< HEAD
           { x: 0, y: 0 },
           { x: 1, y: 0 },
           { x: 1, y: -1 },
           { x: 1, y: -2 },
+=======
+          { x: -1, y: 0 },
+          { x: 0, y: 0 },
+          { x: 0, y: -1 },
+          { x: 0, y: -2 },
+>>>>>>> 1860f9c71b7130e3851590f0efc737fbcfcc0e80
         ];
         break;
       default:
@@ -159,6 +174,7 @@ export const App = () => {
    * Подвинуть влево
    ***********************************/
   const moveLeft = () => {
+<<<<<<< HEAD
     const touchedLeftWall = currentFigure.points.filter((p) => p.x === 0).length > 0;
     const touchedFilledBlock =
       currentFigure.points.filter(
@@ -166,6 +182,9 @@ export const App = () => {
       ).length > 0;
 
     if (touchedLeftWall || touchedFilledBlock) {
+=======
+    if (currentFigure.points.filter((p) => p.x == 0).length > 0) {
+>>>>>>> 1860f9c71b7130e3851590f0efc737fbcfcc0e80
       return;
     }
 
@@ -181,6 +200,7 @@ export const App = () => {
    * Подвинуть вправо
    ********************************/
   const moveRight = () => {
+<<<<<<< HEAD
     const touchedRightWall = currentFigure.points.filter((p) => p.x == FIELD_SIZE_X - 1).length > 0;
     const touchedFilledBlock =
       currentFigure.points.filter(
@@ -188,6 +208,9 @@ export const App = () => {
       ).length > 0;
 
     if (touchedRightWall || touchedFilledBlock) {
+=======
+    if (currentFigure.points.filter((p) => p.x == FIELD_SIZE_X - 1).length > 0) {
+>>>>>>> 1860f9c71b7130e3851590f0efc737fbcfcc0e80
       return;
     }
 
@@ -290,6 +313,16 @@ export const App = () => {
         // Удаляем из newPoints эту точку
         newPoints = removePoint(newPoints, upperPoint);
         upperPoint.y++;
+<<<<<<< HEAD
+=======
+        // Опускаем точку до тех пор, пока она не коснется конца или другой точки
+        // while (
+        //   upperPoint.y < FIELD_SIZE_Y - 1 &&
+        //   newPoints.filter((p) => upperPoint.x === p.x && upperPoint.y < p.y - 1).length === 0
+        // ) {
+        //   upperPoint.y++;
+        // }
+>>>>>>> 1860f9c71b7130e3851590f0efc737fbcfcc0e80
         // добавляем обновленную точку
         newPoints = [...newPoints, upperPoint];
       });
@@ -300,6 +333,10 @@ export const App = () => {
     // добавляем очки
     setScore((prev) => prev + linesToRemove.length * SCORE_POINTS_FOR_LINE);
 
+<<<<<<< HEAD
+=======
+    // рекурсивно вызвать removeFilledLines
+>>>>>>> 1860f9c71b7130e3851590f0efc737fbcfcc0e80
     while (removeFilledLines());
 
     return true;
@@ -310,6 +347,7 @@ export const App = () => {
    ***********************************/
   const moveDown = () => {
     // блок дошёл до конца
+<<<<<<< HEAD
     const figureTouchedBottom = currentFigure.points.filter((p) => p.y >= FIELD_SIZE_Y - 1).length > 0;
     const figureTouchedFilledBlock =
       currentFigure.points.filter((p) => filledBlocks.points.filter((b) => b.y === p.y + 1 && b.x === p.x).length > 0)
@@ -322,6 +360,13 @@ export const App = () => {
         return;
       }
 
+=======
+    if (
+      currentFigure.points.filter(
+        (p) => filledBlocks.points.filter((b) => b.y == p.y + 1 && b.x == p.x).length > 0 || p.y >= FIELD_SIZE_Y - 1
+      ).length > 0
+    ) {
+>>>>>>> 1860f9c71b7130e3851590f0efc737fbcfcc0e80
       // добавляем данные блока в filledBlocks
       setFilledBlocks({ points: [...filledBlocks.points, ...currentFigure.points] });
 
@@ -341,6 +386,7 @@ export const App = () => {
     });
   };
 
+<<<<<<< HEAD
   /**********************************
    * Игрок проиграл
    **********************************/
@@ -348,15 +394,31 @@ export const App = () => {
 
   /********************************
    * TODO: реализовать интервально
+=======
+  /********************************
+>>>>>>> 1860f9c71b7130e3851590f0efc737fbcfcc0e80
    * Изменился счёт
    *********************************/
   useEffect(() => {
     if (score === 300) {
       setLevel(2);
+<<<<<<< HEAD
     } else if (score === 700) {
       setLevel(3);
     } else if (score === 1000) {
       setLevel(4);
+=======
+      setSpeed(500);
+      setImage("level2.jpg");
+    } else if (score === 700) {
+      setLevel(3);
+      setSpeed(300);
+      setImage("level3.jpg");
+    } else if (score === 1000) {
+      setLevel(4);
+      setSpeed(100);
+      setImage("level4.jpg");
+>>>>>>> 1860f9c71b7130e3851590f0efc737fbcfcc0e80
     }
   }, [score]);
 
@@ -432,16 +494,28 @@ export const App = () => {
    * например, запоминать остаток времени в ref, чтобы оно пережило перезагрузку страницы
    ***************************/
   useEffect(() => {
+<<<<<<< HEAD
     if (pause || gameOver) return;
 
     const timeoutDown = setTimeout(() => {
       moveDown();
     }, speedForLevels[level - 1]);
+=======
+    if (pause) return;
+
+    const timeoutDown = setTimeout(() => {
+      moveDown();
+    }, speed);
+>>>>>>> 1860f9c71b7130e3851590f0efc737fbcfcc0e80
 
     return () => {
       clearTimeout(timeoutDown);
     };
+<<<<<<< HEAD
   }, [currentFigure, pause, gameOver]);
+=======
+  }, [currentFigure, pause]);
+>>>>>>> 1860f9c71b7130e3851590f0efc737fbcfcc0e80
 
   const blocks = () => {
     const divs = new Array(FIELD_SIZE_X * FIELD_SIZE_Y);
@@ -532,6 +606,7 @@ export const App = () => {
           {drawCurrentFigure()}
           {drawFilledBlocks()}
         </Div>
+<<<<<<< HEAD
         {gameOver && (
           <Div className="gameOverDiv">
             <span>GAME OVER</span>
@@ -561,6 +636,32 @@ export const App = () => {
         </Card>
       </SplitCol>
 
+=======
+      </SplitCol>
+
+      {/* Правая часть */}
+      <SplitCol style={{ backgroundColor: "hotpink" }}>
+        <Group>
+          <RichCell bottom={<Div>{level}</Div>}>Уровень</RichCell>
+          <Separator />
+          <RichCell bottom={<Div>{score}</Div>}>Счёт</RichCell>
+          <Separator />
+          <RichCell
+            bottom={
+              <Div className="nextField">
+                {drawNextField()}
+                {drawNextFigure()}
+              </Div>
+            }>
+            Следующая
+          </RichCell>
+        </Group>
+        <Card style={{ padding: "20px" }}>
+          <Image src={`src/assets/${image}`} alt="изображение уровня" size={300} />
+        </Card>
+      </SplitCol>
+
+>>>>>>> 1860f9c71b7130e3851590f0efc737fbcfcc0e80
       {/* Нижняя часть с кнопками управления */}
       <FixedLayout vertical="bottom" filled style={{ backgroundColor: "blueviolet", height: "100px" }}>
         <ButtonGroup>
