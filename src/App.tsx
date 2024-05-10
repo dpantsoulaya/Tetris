@@ -12,6 +12,7 @@ import {
   Image,
   RichCell,
   Placeholder,
+  IconButton,
 } from "@vkontakte/vkui";
 
 import "./app.css";
@@ -19,6 +20,14 @@ import "./app.css";
 import { Point } from "./types/point";
 import { Block } from "./types/block";
 import { FigureType } from "./types/figureType";
+import {
+  Icon48ArrowDownOutline,
+  Icon48ArrowLeftOutline,
+  Icon48ArrowRightOutline,
+  Icon48Forward,
+  Icon48Pause,
+  Icon48Play,
+} from "@vkontakte/icons";
 
 const FIELD_SIZE_X = 10;
 const FIELD_SIZE_Y = 20;
@@ -525,7 +534,7 @@ export const App = () => {
   return (
     <SplitLayout>
       {/* Часть с полем для тетриса */}
-      <SplitCol style={{ backgroundColor: "goldenrod" }} fixed width="370px" maxWidth="370px">
+      <SplitCol fixed width="370px" maxWidth="370px">
         <Div className="mainField">
           {blocks()}
           {drawCurrentFigure()}
@@ -539,7 +548,7 @@ export const App = () => {
       </SplitCol>
 
       {/* Правая часть */}
-      <SplitCol style={{ backgroundColor: "hotpink" }}>
+      <SplitCol>
         <Group>
           <RichCell bottom={<Div>{level}</Div>}>Уровень</RichCell>
           <Separator />
@@ -561,14 +570,51 @@ export const App = () => {
       </SplitCol>
 
       {/* Нижняя часть с кнопками управления */}
-      <FixedLayout vertical="bottom" filled style={{ backgroundColor: "blueviolet", height: "100px" }}>
+      <FixedLayout vertical="bottom" filled className="controlsSection">
+        <SplitLayout>
+          <SplitCol>
+            <ButtonGroup>
+              <IconButton label="Двигать влево" onClick={moveLeft}>
+                <Icon48ArrowLeftOutline className="button" />
+              </IconButton>
+              <IconButton label="Двигать вниз" onClick={moveDown}>
+                <Icon48ArrowDownOutline className="button" />
+              </IconButton>
+              <IconButton label="Двигать вправо" onClick={moveRight}>
+                <Icon48ArrowRightOutline className="button" />
+              </IconButton>
+            </ButtonGroup>
+          </SplitCol>
+
+          <SplitCol style={{ textAlign: "center" }}>
+            <ButtonGroup>
+              <IconButton label="Рестарт">
+                <Icon48Play className="button" />
+              </IconButton>
+              <IconButton label="Пауза" onClick={pauseGame}>
+                <Icon48Pause className="button" />
+              </IconButton>
+            </ButtonGroup>
+          </SplitCol>
+
+          <SplitCol>
+            <ButtonGroup style={{ float: "right" }}>
+              <IconButton label="Повернуть" onClick={rotate}>
+                <Icon48Forward className="button" />
+              </IconButton>
+            </ButtonGroup>
+          </SplitCol>
+        </SplitLayout>
+        {/*
         <ButtonGroup>
+          
           <Button onClick={moveLeft}>Влево</Button>
           <Button onClick={rotate}>Повернуть</Button>
           <Button onClick={moveRight}>Вправо</Button>
         </ButtonGroup>
 
         <Button onClick={pauseGame}>Пауза</Button>
+         */}
       </FixedLayout>
     </SplitLayout>
   );

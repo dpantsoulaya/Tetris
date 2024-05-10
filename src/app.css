@@ -4,7 +4,7 @@
   border: 1px black solid;
   margin: 20px;
   padding: 0;
-  background-color: greenyellow;
+  background-color: lightgray;
   position: relative;
 }
 
@@ -18,18 +18,20 @@
 
 .currentFigureBlock,
 .nextFigureBlock {
-  width: 25px;
-  height: 25px;
-  border: 1px solid gray;
-  background-color: brown;
+  width: 15px;
+  height: 15px;
+  border: 1px solid black;
+  margin: 5px;
+  background-color: black;
   position: absolute;
 }
 
 .filledBlock {
-  width: 25px;
-  height: 25px;
-  border: 1px solid gray;
-  background-color: darkviolet;
+  width: 15px;
+  height: 15px;
+  margin: 5px;
+  border: 1px solid black;
+  background-color: black;
   position: absolute;
 }
 
@@ -38,10 +40,9 @@
   height: 100px;
   border: 1px black solid;
   padding: 0;
-  background-color: khaki;
+  background-color: lightgray;
   position: relative;
 }
-<<<<<<< HEAD
 
 .gameOverDiv {
   position: absolute;
@@ -61,5 +62,16 @@
   font-size: 28px;
   font-weight: bold;
 }
-=======
->>>>>>> 1860f9c71b7130e3851590f0efc737fbcfcc0e80
+
+.controlsSection {
+  background-color: lightgrey;
+  height: 100px;
+  padding: 10px;
+}
+
+.button {
+  background-color: gray;
+  padding: 10px;
+  border-radius: 50%;
+  color: white;
+}
