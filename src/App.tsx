@@ -1,21 +1,20 @@
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import {
   SplitLayout,
   SplitCol,
   FixedLayout,
   Div,
-  Button,
   ButtonGroup,
   Group,
   Separator,
-  Card,
-  Image,
   RichCell,
   Placeholder,
   IconButton,
+  Alert,
 } from "@vkontakte/vkui";
 
 import "./app.css";
+import IMAGES from "./assets/IMAGES.tsx";
 
 import { Point } from "./types/point";
 import { Block } from "./types/block";
@@ -40,14 +39,11 @@ const NUMBER_OF_FIGURE_TYPES = 7;
 // Очки за заполненную линию
 const SCORE_POINTS_FOR_LINE = 100;
 
-// Точки счета для перехода на следующий уровень
-const score_checkpoints = [300, 700, 1000];
-
 // Скорость на уровнях
-const speedForLevels = [1000, 700, 500, 300];
+const speedForLevels = [700, 500, 200, 100];
 
 // Картинки для уровней
-const imagesForLevels = ["level1.jpg", "level2.jpg", "level3.jpg", "level4.jpg"];
+const imagesForLevels = [IMAGES.image1, IMAGES.image2, IMAGES.image3, IMAGES.image4];
 
 export const App = () => {
   const [currentFigure, setCurrentFigure] = useState<Block>({ points: [] });
@@ -57,6 +53,8 @@ export const App = () => {
   const [pause, setPause] = useState(false);
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
+  const [popout, setPopout] = useState<ReactNode | null>(null);
+  const mainFieldRef = useRef<HTMLDivElement>(null);
 
   function randomIntFromInterval(min: number, max: number) {
     return Math.floor(Math.random() * (max - min + 1) + min);
@@ -69,7 +67,52 @@ export const App = () => {
     const currentFigureType = randomIntFromInterval(1, NUMBER_OF_FIGURE_TYPES);
     startNewFigure(currentFigureType);
     setNextFigureType(randomIntFromInterval(1, NUMBER_OF_FIGURE_TYPES));
+
+    mainFieldRef.current?.focus();
   }, []);
+
+  /***********************************
+   * Закрыть всплывающее окно
+   ***********************************/
+  const closePopout = () => {
+    setPopout(null);
+  };
+
+  /**********************************
+   * Запуск новой игры
+   **********************************/
+  const restart = () => {
+    setPause(true);
+    setPopout(
+      <Alert
+        actions={[
+          {
+            title: "Начать новую игру",
+            mode: "destructive",
+            action: () => {
+              setGameOver(false);
+              setScore(0);
+              setLevel(1);
+              setFilledBlocks({ points: [] });
+              const currentFigureType = randomIntFromInterval(1, NUMBER_OF_FIGURE_TYPES);
+              startNewFigure(currentFigureType);
+              setNextFigureType(randomIntFromInterval(1, NUMBER_OF_FIGURE_TYPES));
+              setPopout(null);
+              setPause(false);
+            },
+          },
+          {
+            title: "Отмена",
+            mode: "cancel",
+          },
+        ]}
+        actionsLayout="vertical"
+        onClose={closePopout}
+        header="Начало новой игры"
+        text="Весь текущий прогресс будет потерян. Вы уверены, что хотите начать новую игру?"
+      />
+    );
+  };
 
   /******************************************
    * Создать новую фигуру
@@ -168,6 +211,8 @@ export const App = () => {
    * Подвинуть влево
    ***********************************/
   const moveLeft = () => {
+    if (gameOver || pause) return;
+
     const touchedLeftWall = currentFigure.points.filter((p) => p.x === 0).length > 0;
     const touchedFilledBlock =
       currentFigure.points.filter(
@@ -190,6 +235,8 @@ export const App = () => {
    * Подвинуть вправо
    ********************************/
   const moveRight = () => {
+    if (gameOver || pause) return;
+
     const touchedRightWall = currentFigure.points.filter((p) => p.x == FIELD_SIZE_X - 1).length > 0;
     const touchedFilledBlock =
       currentFigure.points.filter(
@@ -212,6 +259,8 @@ export const App = () => {
    * Поворот блока
    * ******************************/
   const rotate = () => {
+    if (gameOver || pause) return;
+
     // квадрат не нужно поворачивать
     if (currentFigure.figureType === 2) {
       return;
@@ -254,64 +303,41 @@ export const App = () => {
     });
   };
 
-  function onlyUnique(value: number, index: number, array: number[]) {
-    return array.indexOf(value) === index;
-  }
-
-  // Удалить точку из массива
-  function removePoint(arr: Point[], point: Point) {
-    const index = arr.indexOf(point);
-    if (index > -1) {
-      arr.splice(index, 1);
-    }
-    return arr;
-  }
-
   /**********************************
    * Убрать заполненные линии
    * Рекурсивная функция
    * ***********************************/
-  const removeFilledLines = (): boolean => {
-    const linesToRemove: number[] = [];
-
+  const removeFilledLines = () => {
+    // Будем удалять по одной линии за раз
     // Есть ли полностью заполненные линии?
-    filledBlocks.points
-      .map((p1) => p1.y)
-      .filter(onlyUnique)
-      .forEach((line) => {
-        if (filledBlocks.points.filter((p) => p.y === line).length === FIELD_SIZE_X) {
-          // Линия заполнена
-          linesToRemove.push(line);
-        }
-      });
+    let line = 0;
+    for (; line < FIELD_SIZE_Y; line++) {
+      if (filledBlocks.points.filter((p) => p.y === line).length === FIELD_SIZE_X) {
+        // Линия заполнена
+        break;
+      }
+    }
 
-    if (linesToRemove.length == 0) return false;
+    if (line === FIELD_SIZE_Y) return;
 
-    // Есть линии, которые можно удалить. Все точки, расположенные над этими линиями, опускаем вниз
-    let newPoints = [...filledBlocks.points.filter((p) => !linesToRemove.includes(p.y))];
+    // Есть линия, которую можно удалить. Оставляем в покое точки под линией
+    let newPoints = [...filledBlocks.points.filter((p) => p.y > line)];
 
-    linesToRemove.forEach((line) => {
-      // Все точки, которые выше линии, которую необходимо удалить.
-      // Сортируем, чтобы нижние точки обрабатывались первыми (чтобы верхним было куда падать)
-      const upperPoints = filledBlocks.points.filter((p) => p.y < line).sort((a, b) => b.y - a.y);
+    // Все точки, которые выше линии, которую необходимо удалить.
+    // Сортируем, чтобы нижние точки обрабатывались первыми (чтобы верхним было куда падать)
+    const upperPoints = filledBlocks.points.filter((p) => p.y < line).sort((a, b) => b.y - a.y);
 
-      upperPoints.forEach((upperPoint) => {
-        // Удаляем из newPoints эту точку
-        newPoints = removePoint(newPoints, upperPoint);
-        upperPoint.y++;
-        // добавляем обновленную точку
-        newPoints = [...newPoints, upperPoint];
-      });
-    });
+    newPoints = [
+      ...newPoints,
+      ...upperPoints.map((u) => {
+        return { x: u.x, y: u.y + 1 };
+      }),
+    ];
 
     setFilledBlocks({ points: [...newPoints] });
 
     // добавляем очки
-    setScore((prev) => prev + linesToRemove.length * SCORE_POINTS_FOR_LINE);
-
-    while (removeFilledLines());
-
-    return true;
+    setScore((prev) => prev + SCORE_POINTS_FOR_LINE);
   };
 
   /*********************************
@@ -359,11 +385,11 @@ export const App = () => {
    * Изменился счёт
    *********************************/
   useEffect(() => {
-    if (score === 300) {
+    if (level < 2 && score >= 1000 && score < 3000) {
       setLevel(2);
-    } else if (score === 700) {
+    } else if (level < 3 && score >= 3000 && score < 5000) {
       setLevel(3);
-    } else if (score === 1000) {
+    } else if (level < 4 && score >= 5000) {
       setLevel(4);
     }
   }, [score]);
@@ -380,6 +406,7 @@ export const App = () => {
    * Поставить игру на паузу
    ************************/
   const pauseGame = () => {
+    if (gameOver) return;
     setPause((prev) => !prev);
   };
 
@@ -391,7 +418,7 @@ export const App = () => {
       .filter((p) => p.y >= 0)
       .map((p) => (
         <div
-          key={100 * (p.y * BLOCK_SIZE + p.x)}
+          key={randomIntFromInterval(1, 100000000)}
           className="currentFigureBlock"
           style={{ top: p.y * BLOCK_SIZE, left: p.x * BLOCK_SIZE }}></div>
       ));
@@ -403,7 +430,7 @@ export const App = () => {
   const drawFilledBlocks = () => {
     return filledBlocks.points.map((f) => (
       <div
-        key={300 * (f.y * BLOCK_SIZE + f.x)}
+        key={randomIntFromInterval(1, 100000000)}
         className="filledBlock"
         style={{ top: f.y * BLOCK_SIZE, left: f.x * BLOCK_SIZE }}></div>
     ));
@@ -432,7 +459,7 @@ export const App = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [currentFigure]);
+  }, [currentFigure, pause]);
 
   /***************************
    * Запуск таймера
@@ -459,7 +486,7 @@ export const App = () => {
         divs.push(
           <div
             className="fieldBlock"
-            key={i * BLOCK_SIZE + j}
+            key={randomIntFromInterval(1, 100000000)}
             style={{ top: i * BLOCK_SIZE, left: j * BLOCK_SIZE }}></div>
         );
       }
@@ -482,7 +509,7 @@ export const App = () => {
         divs.push(
           <div
             className="nextBlock"
-            key={i * BLOCK_SIZE + j}
+            key={randomIntFromInterval(1, 100000000)}
             style={{ top: i * BLOCK_SIZE, left: j * BLOCK_SIZE }}></div>
         );
       }
@@ -525,21 +552,26 @@ export const App = () => {
       return (
         <div
           className="nextFigureBlock"
-          key={100 * (p.y * BLOCK_SIZE + p.x)}
+          key={randomIntFromInterval(1, 100000000)}
           style={{ top: p.y * BLOCK_SIZE, left: p.x * BLOCK_SIZE }}></div>
       );
     });
   };
 
   return (
-    <SplitLayout>
+    <SplitLayout popout={popout}>
       {/* Часть с полем для тетриса */}
-      <SplitCol fixed width="370px" maxWidth="370px">
-        <Div className="mainField">
+      <SplitCol style={{ marginLeft: "20px" }}>
+        <div className="mainField">
           {blocks()}
           {drawCurrentFigure()}
           {drawFilledBlocks()}
-        </Div>
+        </div>
+        {pause && (
+          <Div className="pauseDiv">
+            <span>Пауза</span>
+          </Div>
+        )}
         {gameOver && (
           <Div className="gameOverDiv">
             <span>GAME OVER</span>
@@ -549,24 +581,29 @@ export const App = () => {
 
       {/* Правая часть */}
       <SplitCol>
-        <Group>
-          <RichCell bottom={<Div>{level}</Div>}>Уровень</RichCell>
+        <Div className="rightSection">
+          <Group>
+            <RichCell bottom={<Div className="levelsDiv">{level}</Div>}>Уровень</RichCell>
+            <Separator />
+            <RichCell bottom={<Div className="scoreDiv">{score}</Div>}>Счёт</RichCell>
+            <Separator />
+            <RichCell
+              bottom={
+                <Div className="nextField">
+                  {drawNextField()}
+                  {drawNextFigure()}
+                </Div>
+              }>
+              Следующая
+            </RichCell>
+          </Group>
           <Separator />
-          <RichCell bottom={<Div>{score}</Div>}>Счёт</RichCell>
-          <Separator />
-          <RichCell
-            bottom={
-              <Div className="nextField">
-                {drawNextField()}
-                {drawNextFigure()}
-              </Div>
-            }>
-            Следующая
-          </RichCell>
-        </Group>
-        <Card style={{ padding: "20px" }}>
-          <Image src={`src/assets/${imagesForLevels[level - 1]}`} alt="изображение уровня" size={300} />
-        </Card>
+          <img
+            src={imagesForLevels[level - 1]}
+            style={{ marginTop: "20px", height: "200px" }}
+            alt="изображение уровня"
+          />
+        </Div>
       </SplitCol>
 
       {/* Нижняя часть с кнопками управления */}
@@ -588,7 +625,7 @@ export const App = () => {
 
           <SplitCol style={{ textAlign: "center" }}>
             <ButtonGroup>
-              <IconButton label="Рестарт">
+              <IconButton label="Рестарт" onClick={restart}>
                 <Icon48Play className="button" />
               </IconButton>
               <IconButton label="Пауза" onClick={pauseGame}>
@@ -597,24 +634,14 @@ export const App = () => {
             </ButtonGroup>
           </SplitCol>
 
-          <SplitCol>
-            <ButtonGroup style={{ float: "right" }}>
+          <SplitCol maxWidth={70}>
+            <ButtonGroup>
               <IconButton label="Повернуть" onClick={rotate}>
                 <Icon48Forward className="button" />
               </IconButton>
             </ButtonGroup>
           </SplitCol>
         </SplitLayout>
-        {/*
-        <ButtonGroup>
-          
-          <Button onClick={moveLeft}>Влево</Button>
-          <Button onClick={rotate}>Повернуть</Button>
-          <Button onClick={moveRight}>Вправо</Button>
-        </ButtonGroup>
-
-        <Button onClick={pauseGame}>Пауза</Button>
-         */}
       </FixedLayout>
     </SplitLayout>
   );
