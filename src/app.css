@@ -52,6 +52,7 @@
   text-align: center;
   vertical-align: middle;
   background-color: rgb(0, 0, 0.9, 0.4);
+  padding: 0;
 }
 
 .gameOverDiv span,
@@ -105,4 +106,74 @@
   padding: 10px;
   border-radius: 50%;
   color: whitesmoke;
+}
+
+/*********************************************************
+* Для мобильных устройств
+**********************************************************/
+
+@media (max-width: 629px) {
+}
+
+@media (max-width: 565px) {
+}
+
+/**************** Ширина 479 *************************/
+@media (max-width: 479px) {
+  .mainField,
+  .pauseDiv,
+  .gameOverDiv {
+    transform: translate(-50%, -50%);
+    top: 43%;
+    left: 65%;
+  }
+
+  .rightSection {
+    top: 43%;
+    left: 50%;
+    position: absolute;
+    transform: translate(-25%, -50%);
+    padding: 0;
+  }
+
+  .controlsSection {
+    height: 70px;
+  }
+
+  .button {
+    padding: 4px;
+    border-radius: 50%;
+  }
+}
+
+/** Совсем маленькое разрешение  **/
+@media (max-width: 389px) {
+  .mainField,
+  .pauseDiv,
+  .gameOverDiv {
+    transform: translate(-45%, -50%);
+    top: 43%;
+    left: 60%;
+  }
+
+  .rightSection {
+    top: 43%;
+    left: 55%;
+    position: absolute;
+    transform: translate(-25%, -50%);
+    padding: 0;
+  }
+
+  .hideOnSmallPhones {
+    display: none;
+  }
+
+  .controlsSection {
+    height: 70px;
+  }
+
+  .button {
+    padding: 1px;
+    border-radius: 50%;
+  }
 }

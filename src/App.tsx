@@ -1,4 +1,6 @@
 import { ReactNode, useEffect, useRef, useState } from "react";
+import bridge, { EAdsFormats } from "@vkontakte/vk-bridge";
+
 import {
   SplitLayout,
   SplitCol,
@@ -14,7 +16,6 @@ import {
 } from "@vkontakte/vkui";
 
 import "./app.css";
-import IMAGES from "./assets/IMAGES.tsx";
 
 import { Point } from "./types/point";
 import { Block } from "./types/block";
@@ -40,10 +41,7 @@ const NUMBER_OF_FIGURE_TYPES = 7;
 const SCORE_POINTS_FOR_LINE = 100;
 
 // Скорость на уровнях
-const speedForLevels = [700, 500, 200, 100];
-
-// Картинки для уровней
-const imagesForLevels = [IMAGES.image1, IMAGES.image2, IMAGES.image3, IMAGES.image4];
+const speedForLevels = [700, 600, 500, 400, 300, 200, 100];
 
 export const App = () => {
   const [currentFigure, setCurrentFigure] = useState<Block>({ points: [] });
@@ -69,6 +67,9 @@ export const App = () => {
     setNextFigureType(randomIntFromInterval(1, NUMBER_OF_FIGURE_TYPES));
 
     mainFieldRef.current?.focus();
+
+    // Отправляет событие инициализации нативному клиенту
+    bridge.send("VKWebAppInit");
   }, []);
 
   /***********************************
@@ -82,6 +83,9 @@ export const App = () => {
    * Запуск новой игры
    **********************************/
   const restart = () => {
+    // Проверка к готовности рекламы к показу.
+    bridge.send("VKWebAppCheckNativeAds", { ad_format: EAdsFormats.INTERSTITIAL });
+
     setPause(true);
     setPopout(
       <Alert
@@ -90,15 +94,23 @@ export const App = () => {
             title: "Начать новую игру",
             mode: "destructive",
             action: () => {
-              setGameOver(false);
-              setScore(0);
-              setLevel(1);
-              setFilledBlocks({ points: [] });
-              const currentFigureType = randomIntFromInterval(1, NUMBER_OF_FIGURE_TYPES);
-              startNewFigure(currentFigureType);
-              setNextFigureType(randomIntFromInterval(1, NUMBER_OF_FIGURE_TYPES));
-              setPopout(null);
-              setPause(false);
+              // Показать рекламу
+              bridge
+                .send("VKWebAppShowNativeAds", { ad_format: EAdsFormats.INTERSTITIAL })
+                .then(() => {
+                  setGameOver(false);
+                  setScore(0);
+                  setLevel(1);
+                  setFilledBlocks({ points: [] });
+                  const currentFigureType = randomIntFromInterval(1, NUMBER_OF_FIGURE_TYPES);
+                  startNewFigure(currentFigureType);
+                  setNextFigureType(randomIntFromInterval(1, NUMBER_OF_FIGURE_TYPES));
+                  setPopout(null);
+                  setPause(false);
+                })
+                .catch((error) => {
+                  console.log(error); /* Ошибка */
+                });
             },
           },
           {
@@ -385,12 +397,20 @@ export const App = () => {
    * Изменился счёт
    *********************************/
   useEffect(() => {
-    if (level < 2 && score >= 1000 && score < 3000) {
+    if (level < 2 && score >= 1000 && score < 2000) {
       setLevel(2);
-    } else if (level < 3 && score >= 3000 && score < 5000) {
+    } else if (level < 3 && score >= 2000 && score < 3000) {
       setLevel(3);
-    } else if (level < 4 && score >= 5000) {
+    } else if (level < 4 && score >= 3000 && score < 5000) {
       setLevel(4);
+    } else if (level < 4 && score >= 5000 && score < 6000) {
+      setLevel(5);
+    } else if (level < 4 && score >= 6000 && score < 7000) {
+      setLevel(6);
+    } else if (level < 4 && score >= 7000 && score < 8000) {
+      setLevel(7);
+    } else if (level < 4 && score >= 8000) {
+      setLevel(8);
     }
   }, [score]);
 
@@ -586,23 +606,28 @@ export const App = () => {
             <RichCell bottom={<Div className="levelsDiv">{level}</Div>}>Уровень</RichCell>
             <Separator />
             <RichCell bottom={<Div className="scoreDiv">{score}</Div>}>Счёт</RichCell>
-            <Separator />
-            <RichCell
-              bottom={
-                <Div className="nextField">
-                  {drawNextField()}
-                  {drawNextFigure()}
-                </Div>
-              }>
-              Следующая
-            </RichCell>
+
+            <div className="hideOnSmallPhones">
+              <Separator />
+              <RichCell
+                bottom={
+                  <Div className="nextField">
+                    {drawNextField()}
+                    {drawNextFigure()}
+                  </Div>
+                }>
+                Следующая
+              </RichCell>
+            </div>
           </Group>
+          {/* 
           <Separator />
           <img
             src={imagesForLevels[level - 1]}
             style={{ marginTop: "20px", height: "200px" }}
             alt="изображение уровня"
           />
+          */}
         </Div>
       </SplitCol>
 
