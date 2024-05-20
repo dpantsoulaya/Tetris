@@ -1,6 +1,10 @@
 /******************************
 * Основная секция с полем тетриса
 ******************************/
+.rightColumn {
+  margin-left: 20px;
+}
+
 .mainField {
   width: 250px;
   height: 500px;
@@ -120,6 +124,10 @@
 
 /**************** Ширина 479 *************************/
 @media (max-width: 479px) {
+  .rightColumn {
+    margin-left: 0;
+  }
+
   .mainField,
   .pauseDiv,
   .gameOverDiv {

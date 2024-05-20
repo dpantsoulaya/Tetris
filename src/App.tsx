@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useRef, useState } from "react";
 import bridge, { EAdsFormats } from "@vkontakte/vk-bridge";
+import { useInterval } from "./helpers/useInterval";
 
 import {
   SplitLayout,
@@ -41,7 +42,7 @@ const NUMBER_OF_FIGURE_TYPES = 7;
 const SCORE_POINTS_FOR_LINE = 100;
 
 // Скорость на уровнях
-const speedForLevels = [700, 600, 500, 400, 300, 200, 100];
+const speedForLevels = [7, 6, 5, 4, 3, 2, 1];
 
 export const App = () => {
   const [currentFigure, setCurrentFigure] = useState<Block>({ points: [] });
@@ -53,10 +54,22 @@ export const App = () => {
   const [level, setLevel] = useState(1);
   const [popout, setPopout] = useState<ReactNode | null>(null);
   const mainFieldRef = useRef<HTMLDivElement>(null);
+  const iFreeTicks = useRef(0);
 
   function randomIntFromInterval(min: number, max: number) {
     return Math.floor(Math.random() * (max - min + 1) + min);
   }
+
+  useInterval(() => {
+    if (iFreeTicks.current <= speedForLevels[level - 1]) {
+      iFreeTicks.current++;
+      console.log(iFreeTicks.current);
+    } else {
+      iFreeTicks.current = 0;
+      console.log("move down");
+      moveDown();
+    }
+  }, 50);
 
   /**********************************
    * Загрузка страницы
@@ -79,6 +92,18 @@ export const App = () => {
     setPopout(null);
   };
 
+  const resetAll = () => {
+    setGameOver(false);
+    setScore(0);
+    setLevel(1);
+    setFilledBlocks({ points: [] });
+    const currentFigureType = randomIntFromInterval(1, NUMBER_OF_FIGURE_TYPES);
+    startNewFigure(currentFigureType);
+    setNextFigureType(randomIntFromInterval(1, NUMBER_OF_FIGURE_TYPES));
+    setPopout(null);
+    setPause(false);
+  };
+
   /**********************************
    * Запуск новой игры
    **********************************/
@@ -95,22 +120,22 @@ export const App = () => {
             mode: "destructive",
             action: () => {
               // Показать рекламу
-              bridge
-                .send("VKWebAppShowNativeAds", { ad_format: EAdsFormats.INTERSTITIAL })
-                .then(() => {
-                  setGameOver(false);
-                  setScore(0);
-                  setLevel(1);
-                  setFilledBlocks({ points: [] });
-                  const currentFigureType = randomIntFromInterval(1, NUMBER_OF_FIGURE_TYPES);
-                  startNewFigure(currentFigureType);
-                  setNextFigureType(randomIntFromInterval(1, NUMBER_OF_FIGURE_TYPES));
-                  setPopout(null);
-                  setPause(false);
-                })
-                .catch((error) => {
-                  console.log(error); /* Ошибка */
-                });
+              try {
+                bridge
+                  .send("VKWebAppShowNativeAds", { ad_format: EAdsFormats.INTERSTITIAL })
+                  .then(() => {
+                    // TODO: по идее resetAll надо вставлять сюда, но она не отображается при тестировании
+                    resetAll();
+                  })
+                  .catch((error) => {
+                    console.log(error); /* Ошибка */
+                  })
+                  .finally(() => {
+                    console.log("!!!!!!!!finally called");
+                  });
+              } catch (exception) {
+                console.log(exception);
+              }
             },
           },
           {
@@ -356,6 +381,8 @@ export const App = () => {
    * Текущая фигура двигается вниз
    ***********************************/
   const moveDown = () => {
+    if (gameOver || pause) return;
+
     // блок дошёл до конца
     const figureTouchedBottom = currentFigure.points.filter((p) => p.y >= FIELD_SIZE_Y - 1).length > 0;
     const figureTouchedFilledBlock =
@@ -479,25 +506,28 @@ export const App = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [currentFigure, pause]);
+  }, [currentFigure, pause, gameOver]);
 
   /***************************
    * Запуск таймера
    * TODO: таймер надо реализовать иначе, чтобы при нажатии кнопок он не сбрасывался
    * например, запоминать остаток времени в ref, чтобы оно пережило перезагрузку страницы
    ***************************/
-  useEffect(() => {
-    if (pause || gameOver) return;
+  // useEffect(() => {
+  //   if (pause || gameOver) return;
 
-    const timeoutDown = setTimeout(() => {
-      moveDown();
-    }, speedForLevels[level - 1]);
+  //   const timeoutDown = setTimeout(() => {
+  //     moveDown();
+  //   }, speedForLevels[level - 1]);
 
-    return () => {
-      clearTimeout(timeoutDown);
-    };
-  }, [currentFigure, pause, gameOver]);
+  //   return () => {
+  //     clearTimeout(timeoutDown);
+  //   };
+  // }, [currentFigure, pause, gameOver]);
 
+  /**************************
+   * Игровое поле
+   *************************/
   const blocks = () => {
     const divs = new Array(FIELD_SIZE_X * FIELD_SIZE_Y);
 
@@ -581,7 +611,7 @@ export const App = () => {
   return (
     <SplitLayout popout={popout}>
       {/* Часть с полем для тетриса */}
-      <SplitCol style={{ marginLeft: "20px" }}>
+      <SplitCol className="rightColumn">
         <div className="mainField">
           {blocks()}
           {drawCurrentFigure()}
@@ -634,7 +664,7 @@ export const App = () => {
       {/* Нижняя часть с кнопками управления */}
       <FixedLayout vertical="bottom" filled className="controlsSection">
         <SplitLayout>
-          <SplitCol>
+          <SplitCol style={{ textAlign: "center" }}>
             <ButtonGroup>
               <IconButton label="Двигать влево" onClick={moveLeft}>
                 <Icon48ArrowLeftOutline className="button" />
@@ -645,22 +675,12 @@ export const App = () => {
               <IconButton label="Двигать вправо" onClick={moveRight}>
                 <Icon48ArrowRightOutline className="button" />
               </IconButton>
-            </ButtonGroup>
-          </SplitCol>
-
-          <SplitCol style={{ textAlign: "center" }}>
-            <ButtonGroup>
               <IconButton label="Рестарт" onClick={restart}>
                 <Icon48Play className="button" />
               </IconButton>
               <IconButton label="Пауза" onClick={pauseGame}>
                 <Icon48Pause className="button" />
               </IconButton>
-            </ButtonGroup>
-          </SplitCol>
-
-          <SplitCol maxWidth={70}>
-            <ButtonGroup>
               <IconButton label="Повернуть" onClick={rotate}>
                 <Icon48Forward className="button" />
               </IconButton>
