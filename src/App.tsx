@@ -54,6 +54,7 @@ export const App = () => {
   const [level, setLevel] = useState(1);
   const [popout, setPopout] = useState<ReactNode | null>(null);
   const mainFieldRef = useRef<HTMLDivElement>(null);
+  const [moveDownPressed, setMoveDownPressed] = useState(false);
   const iFreeTicks = useRef(0);
 
   function randomIntFromInterval(min: number, max: number) {
@@ -61,12 +62,14 @@ export const App = () => {
   }
 
   useInterval(() => {
+    if (moveDownPressed) {
+      moveDown();
+    }
+
     if (iFreeTicks.current <= speedForLevels[level - 1]) {
       iFreeTicks.current++;
-      console.log(iFreeTicks.current);
     } else {
       iFreeTicks.current = 0;
-      console.log("move down");
       moveDown();
     }
   }, 50);
@@ -123,18 +126,16 @@ export const App = () => {
               try {
                 bridge
                   .send("VKWebAppShowNativeAds", { ad_format: EAdsFormats.INTERSTITIAL })
-                  .then(() => {
-                    // TODO: по идее resetAll надо вставлять сюда, но она не отображается при тестировании
-                    resetAll();
-                  })
+                  .then(() => {})
                   .catch((error) => {
                     console.log(error); /* Ошибка */
                   })
                   .finally(() => {
-                    console.log("!!!!!!!!finally called");
+                    resetAll();
                   });
               } catch (exception) {
                 console.log(exception);
+                resetAll();
               }
             },
           },
@@ -331,7 +332,13 @@ export const App = () => {
       }
     });
 
-    if (new_points.filter((p) => p.x < 0 || p.x >= FIELD_SIZE_X).length > 0) {
+    // Если при повороте фигура касается левой или правой стенки, то не надо её поворачивать
+    if (new_points.filter((p) => p.x < 0 || p.x >= FIELD_SIZE_X || p.y >= FIELD_SIZE_Y).length > 0) {
+      return;
+    }
+
+    // если повороту фигуры мешают занятые блоки, то не надо её поворачивать
+    if (new_points.filter((p) => filledBlocks.points.filter((f) => f.x == p.x && f.y == p.y).length > 0).length > 0) {
       return;
     }
 
@@ -375,6 +382,14 @@ export const App = () => {
 
     // добавляем очки
     setScore((prev) => prev + SCORE_POINTS_FOR_LINE);
+  };
+
+  const onTouchStart = () => {
+    setMoveDownPressed(true);
+  };
+
+  const onTouchEnd = () => {
+    setMoveDownPressed(false);
   };
 
   /*********************************
@@ -617,7 +632,7 @@ export const App = () => {
           {drawCurrentFigure()}
           {drawFilledBlocks()}
         </div>
-        {pause && (
+        {pause && !gameOver && (
           <Div className="pauseDiv">
             <span>Пауза</span>
           </Div>
@@ -669,7 +684,13 @@ export const App = () => {
               <IconButton label="Двигать влево" onClick={moveLeft}>
                 <Icon48ArrowLeftOutline className="button" />
               </IconButton>
-              <IconButton label="Двигать вниз" onClick={moveDown}>
+              <IconButton
+                label="Двигать вниз"
+                onMouseDown={onTouchStart}
+                onMouseUp={onTouchEnd}
+                onTouchStart={onTouchStart}
+                onTouchEnd={onTouchEnd}
+                onClick={moveDown}>
                 <Icon48ArrowDownOutline className="button" />
               </IconButton>
               <IconButton label="Двигать вправо" onClick={moveRight}>
